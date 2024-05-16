@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">EasyNote Audio</string>
+    <string name="add_notes">Type to add notes</string>
+    <string name="notes">Notes</string>
+    <string name="music">Music</string>
+    <string name="to_dos">To-Dos</string>
+    <string name="addnotes">ADD Notes</string>
+    <string name="save">save</string>
+    <string name="add">+</string>
+    <string name="help_title">Help</string>
+    <string name="Intro">Welcome to EasyNote Audio. Below are a list of some of the key features. To create a note, go to the Note Manager and click the + symbol.</string>
+    <string name="nav_text_1">Create a note by clicking the + symbol in the bottom left</string>
+    <string name="nav_title">Navigation Manager Features</string>
+    <string name="nav_text_2">To delete a note. Hold note down.</string>
+    <string name="note_title">Note Features</string>
+    <string name="note_text_1">When keyboard is present, two features are present:</string>
+    <string name="note_text_2">Speech To Text : Click to enable speech to text and then speak and text will appear.</string>
+    <string name="note_text_3">Click to enter bullet list mode to add a new bullet point on each new line. Click again to exit bullet list mode.</string>
+    <string name="note_title_4">there is a play button which is TEXT TO SPEECH. Click to have the app read your notes.</string>
+    <string name="todo_text1">On top bar, there is a check list symbol. Clicking the symbol will enter the To-Do List Screen.</string>
+    <string name="todo_text_2">Add task by pressing + symbol in bottom right.</string>
+    <string name="todo_list_3">Check task when complete.</string>
+    <string name="todo_list_4">Delete by swiping tasks and confirm deletion.</string>
+    <string name="to_do_list_title">To-Do List Features</string>
+    <string name="tasks">Tasks</string>
+    <string name="newTask">New Task</string>
+    <string name="save2">Save</string>
+    <string name="listen_to_all_notes">listen to all Notes</string>
+    <string name="addnewnotes">AddNotes</string>
+</resources>

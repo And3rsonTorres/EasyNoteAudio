@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/noteManager">
+
+    <fragment
+        android:id="@+id/noteFragment"
+        android:name="com.mobileapp.easynoteaudio.noteFragment"
+        android:label="Note"
+        tools:layout="@layout/fragment_note">
+        <argument
+            android:name="Title"
+            app:argType="string"
+            android:defaultValue=""/>
+        <argument
+            android:name="Content"
+            app:argType="string"
+            android:defaultValue=""/>
+        <action
+            android:id="@+id/action_noteFragment_to_noteManager"
+            app:destination="@id/noteManager" />
+        <argument
+            android:name="pos"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </fragment>
+    <fragment
+        android:id="@+id/noteManager"
+        android:name="com.mobileapp.easynoteaudio.NoteManager"
+        android:label="NoteManager" >
+        <argument
+            android:name="Title"
+            app:argType="string"
+            android:defaultValue=""/>
+        <argument
+            android:name="Content"
+            app:argType="string"
+            android:defaultValue=""/>
+        <action
+            android:id="@+id/action_noteManager_to_noteFragment"
+            app:destination="@id/noteFragment" />
+        <argument
+            android:name="pos"
+            app:argType="integer"
+            android:defaultValue="-1" />
+
+    </fragment>
+    <fragment
+        android:id="@+id/spotify"
+        android:name="com.mobileapp.easynoteaudio.Spotify"
+        android:label="fragment_spotify"
+        tools:layout="@layout/fragment_spotify" />
+
+    <fragment
+        android:id="@+id/helpFragment"
+        android:name="com.mobileapp.easynoteaudio.helpFragment"
+        android:label="Help"
+        tools:layout="@layout/help_fragment" >
+    </fragment>
+
+    <fragment
+        android:id="@+id/ToDoList"
+        android:name="com.mobileapp.easynoteaudio.ToDoList"
+        android:label="To-Do List"
+        tools:layout="@layout/fragment_to_do_list" >
+    </fragment>
+
+</navigation>

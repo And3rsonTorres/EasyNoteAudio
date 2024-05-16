@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/noteManager"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:title="@string/notes"
+        android:icon="@drawable/note"
+        app:showAsAction="always"/>
+
+    <item
+        android:id="@+id/ToDoList"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:title="@string/to_dos"
+        android:icon="@drawable/to_do"
+        app:showAsAction="always"/>
+    <item
+        android:id="@+id/helpFragment"
+        android:title="@string/help_title"
+        android:icon="@android:drawable/ic_menu_help"
+        app:showAsAction="always"
+        />
+
+</menu>
