@@ -41,4 +41,4 @@ Our app is designed to be of help for a diverse group of people with different n
 
  - [Arthur Rosa](https://github.com/ArthurRosa01898431)
  - [Tashia Boddu](https://github.com/Tashia0705)
-   [Andersoon Torres](httpa://github/And3rsonTorres)
+ - [Anderson Torres](https://github/And3rsonTorres)
