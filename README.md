@@ -41,5 +41,4 @@ Our app is designed to be of help for a diverse group of people with different n
 
  - [Arthur Rosa](https://github.com/ArthurRosa01898431)
  - [Tashia Boddu](https://github.com/Tashia0705)
- - [How to write a Good readme](https://bulldogjob.com/news/449-how-to-write-a-good-readme-for-your-github-project)
-
+   [Andersoon Torres](httpa://github/And3rsonTorres)
