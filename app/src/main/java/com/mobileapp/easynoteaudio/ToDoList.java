@@ -1,89 +1,143 @@
 package com.mobileapp.easynoteaudio;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.FragmentActivity;
-import androidx.fragment.app.FragmentManager;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.content.DialogInterface;
-import android.os.Bundle;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
-import com.mobileapp.easynoteaudio.Model.ToDoModel;
+import com.google.android.material.snackbar.Snackbar;
 import com.mobileapp.easynoteaudio.Adapter.ToDoAdapter;
-import com.mobileapp.easynoteaudio.Utils.DataBaseHandler;
+import com.mobileapp.easynoteaudio.data.ToDoEntity;
 import com.mobileapp.easynoteaudio.databinding.FragmentToDoListBinding;
+import com.mobileapp.easynoteaudio.viewmodel.ToDoViewModel;
 
+public class ToDoList extends Fragment {
 
-public class ToDoList extends Fragment implements DialogCloseListener {
-
-    private ToDoAdapter tasksAdapter;
-    private List<ToDoModel> taskList;
-    private DataBaseHandler db;
-    private final AddNewTask addNewTaskFragment = new AddNewTask(this);
     private FragmentToDoListBinding binding;
+    private ToDoViewModel toDoViewModel;
+    private ToDoAdapter adapter;
+
+    public ToDoList() {
+        // Required empty public constructor
+    }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        binding = FragmentToDoListBinding.inflate(inflater);
-        View view = binding.getRoot();
+        binding = FragmentToDoListBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
 
-        db = new DataBaseHandler((FragmentActivity) getContext());
-        db.openDataBase();
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        toDoViewModel = new ViewModelProvider(requireActivity()).get(ToDoViewModel.class);
 
-        taskList = new ArrayList<>();
+        setupRecyclerView();
+        setupFilterChips();
+        setupFab();
+        observeTasks();
+    }
+
+    private void setupRecyclerView() {
+        adapter = new ToDoAdapter(
+                (task, isCompleted) -> toDoViewModel.updateStatus(task.getId(), isCompleted ? 1 : 0),
+                this::openEditTaskDialog
+        );
 
         binding.tasksRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        binding.tasksRecyclerView.setAdapter(adapter);
 
-        tasksAdapter = new ToDoAdapter(db,this);
-        binding.tasksRecyclerView.setAdapter(tasksAdapter);
-
-
-
-        ItemTouchHelper itemTouchHelper = new
-                ItemTouchHelper(new RecyclerItemTouchHelper(tasksAdapter));
-        itemTouchHelper.attachToRecyclerView(binding.tasksRecyclerView);
-
-
-        taskList = db.getAllTasks();
-        Collections.reverse(taskList);
-        tasksAdapter.setTasks(taskList);
-
-        binding.fab.setOnClickListener(new View.OnClickListener() {
+        // Setup Swipe actions
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
-            public void onClick(View view) {
-//                AddNewTask.newInstance().show(getFragmentManager(), AddNewTask.TAG);
-                addNewTaskFragment.show(getFragmentManager(), AddNewTask.TAG);
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
 
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                if (position >= 0 && position < adapter.getCurrentList().size()) {
+                    ToDoEntity task = adapter.getTaskAt(position);
+                    if (direction == ItemTouchHelper.LEFT) {
+                        // Swipe Left: Delete task
+                        confirmDeleteTask(task, position);
+                    } else {
+                        // Swipe Right: Edit task
+                        adapter.notifyItemChanged(position);
+                        openEditTaskDialog(task);
+                    }
+                }
             }
         });
+        itemTouchHelper.attachToRecyclerView(binding.tasksRecyclerView);
+    }
 
-        // Inflate the layout for this fragment
-        return view;
+    private void setupFilterChips() {
+        binding.filterChipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.contains(R.id.chipPending)) {
+                toDoViewModel.setFilter(0);
+            } else if (checkedIds.contains(R.id.chipCompleted)) {
+                toDoViewModel.setFilter(1);
+            } else {
+                toDoViewModel.setFilter(-1);
+            }
+        });
+    }
+
+    private void setupFab() {
+        binding.fab.setOnClickListener(v -> {
+            AddNewTask dialog = AddNewTask.newInstance(-1, "", 0, 0);
+            dialog.show(getParentFragmentManager(), AddNewTask.TAG);
+        });
+    }
+
+    private void observeTasks() {
+        toDoViewModel.getTasks().observe(getViewLifecycleOwner(), tasks -> {
+            adapter.submitList(tasks);
+            if (tasks == null || tasks.isEmpty()) {
+                binding.emptyTasksLayout.setVisibility(View.VISIBLE);
+                binding.tasksRecyclerView.setVisibility(View.GONE);
+            } else {
+                binding.emptyTasksLayout.setVisibility(View.GONE);
+                binding.tasksRecyclerView.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    private void openEditTaskDialog(ToDoEntity task) {
+        AddNewTask dialog = AddNewTask.newInstance(task.getId(), task.getTask(), task.getPriority(), task.getDueDate());
+        dialog.show(getParentFragmentManager(), AddNewTask.TAG);
+    }
+
+    private void confirmDeleteTask(ToDoEntity task, int position) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle(R.string.delete_note)
+                .setMessage("Are you sure you want to delete this task?")
+                .setPositiveButton(R.string.confirm, (dialog, which) -> {
+                    toDoViewModel.deleteTask(task);
+                    Snackbar.make(binding.getRoot(), R.string.task_deleted, Snackbar.LENGTH_LONG)
+                            .setAction(R.string.undo, v -> toDoViewModel.insertTask(task))
+                            .show();
+                })
+                .setNegativeButton(R.string.cancel, (dialog, which) -> adapter.notifyItemChanged(position))
+                .setOnCancelListener(dialog -> adapter.notifyItemChanged(position))
+                .show();
     }
 
     @Override
-    public void handleDialogClose(DialogInterface dialog) {
-        taskList = db.getAllTasks();
-        Collections.reverse(taskList);
-        tasksAdapter.setTasks(taskList);
-        tasksAdapter.notifyDataSetChanged();
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
     }
-
-
-
 }

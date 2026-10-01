@@ -1,96 +1,229 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/noteEditorRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:windowSoftInputMode="adjustResize">
-    <Button
-        android:id="@+id/saveNote"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="@string/save"
-        app:layout_constraintBottom_toTopOf="@+id/guideline"
-        app:layout_constraintEnd_toEndOf="@+id/textInputLayout" />
+    android:background="?android:attr/colorBackground">
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/speakNotes"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
-        android:contentDescription="@string/listen_to_all_notes"
-        android:src="@drawable/music"
-        app:layout_constraintBottom_toTopOf="@+id/guideline"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/textInputLayout"
+    <!-- Top Action Bar in landscape -->
+    <LinearLayout
+        android:id="@+id/editorHeaderBar"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginHorizontal="8dp"
-        android:layout_marginVertical="8dp"
-        android:hint="@string/add_notes"
-        app:hintAnimationEnabled="true"
-        app:layout_constraintBottom_toTopOf="@+id/guideline"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="4dp"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/edit_text_notes"
+        <TextView
+            android:id="@+id/statsTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            tools:text="0 words • 0 chars" />
+
+        <ImageButton
+            android:id="@+id/buttonPin"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/pin_note"
+            android:src="@drawable/ic_pin_outline"
+            app:tint="@color/text_secondary" />
+
+        <ImageButton
+            android:id="@+id/buttonShare"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/share_note"
+            android:src="@drawable/ic_share"
+            app:tint="@color/text_secondary" />
+
+        <ImageButton
+            android:id="@+id/speakNotes"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/note_title_4"
+            android:src="@android:drawable/ic_lock_silent_mode_off"
+            app:tint="@color/accent" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/saveNote"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="@string/save"
+            android:textAllCaps="false"
+            android:textSize="13sp"
+            app:cornerRadius="18dp"
+            app:backgroundTint="@color/primary" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/colorPickerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="4dp"
+        app:layout_constraintTop_toBottomOf="@id/editorHeaderBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:text="@string/color_category"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+
+        <View
+            android:id="@+id/colorTagDefault"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/square_button_on"
+            android:backgroundTint="@color/note_tag_default" />
+
+        <View
+            android:id="@+id/colorTagAmber"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/square_button_on"
+            android:backgroundTint="@color/note_tag_amber" />
+
+        <View
+            android:id="@+id/colorTagGreen"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/square_button_on"
+            android:backgroundTint="@color/note_tag_green" />
+
+        <View
+            android:id="@+id/colorTagBlue"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/square_button_on"
+            android:backgroundTint="@color/note_tag_blue" />
+
+        <View
+            android:id="@+id/colorTagPurple"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:background="@drawable/square_button_on"
+            android:backgroundTint="@color/note_tag_purple" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/headerDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider_color"
+        app:layout_constraintTop_toBottomOf="@id/colorPickerLayout" />
+
+    <ScrollView
+        android:id="@+id/editorScrollView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toBottomOf="@id/headerDivider"
+        app:layout_constraintBottom_toTopOf="@id/notesFeatures"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:imeOptions="flagNoExtractUi"
-            android:autoLink="all"
-            android:background="@drawable/textview_border"
-            android:gravity="start"
-            android:importantForAutofill="no"
-            android:inputType="textMultiLine"
-            android:scrollbars="vertical"
-            android:textAlignment="textStart"
-            android:textIsSelectable="true"
-            android:textSize="20sp"
-            android:textStyle="normal" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
 
-    <RelativeLayout
+            <EditText
+                android:id="@+id/editTextTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:hint="@string/note_title_hint"
+                android:importantForAutofill="no"
+                android:inputType="textCapSentences"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/editTextNotes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@null"
+                android:gravity="top|start"
+                android:hint="@string/add_notes"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine|textCapSentences"
+                android:lineSpacingExtra="3dp"
+                android:minLines="6"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
         android:id="@+id/notesFeatures"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:background="@color/cardview_dark_background"
-        android:gravity="center_horizontal"
-        android:layout_centerVertical="true"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/guideline">
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/speech_to_text_button"
-            android:layout_width="30dp"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_marginEnd="50dp"
-            android:background="@drawable/speech_to_text" />
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/bullet_points_button"
-            android:layout_width="30dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="50dp"
-            android:layout_marginEnd="50dp"
-            android:layout_toEndOf="@+id/speech_to_text_button"
-            android:background="@drawable/list_bulleted" />
-    </RelativeLayout>
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="44dp"
+        android:background="@color/search_bg"
+        android:elevation="4dp"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent=".80" />
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageButton
+            android:id="@+id/speech_to_text_button"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/note_text_2"
+            android:src="@drawable/speech_to_text"
+            app:tint="@color/primary" />
+
+        <ImageButton
+            android:id="@+id/bullet_points_button"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="32dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/note_text_3"
+            android:src="@drawable/list_bulleted"
+            app:tint="@color/primary" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

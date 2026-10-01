@@ -2,55 +2,57 @@ package com.mobileapp.easynoteaudio;
 
 import android.content.Context;
 import android.speech.tts.TextToSpeech;
-import android.speech.tts.TextToSpeech.OnInitListener;
-
-import androidx.lifecycle.ViewModel;
+import android.util.Log;
 
 import java.util.Locale;
 
-public class TextToSpeechHelper extends ViewModel {
+public class TextToSpeechHelper {
 
-    private final TextToSpeech tts;
+    private static final String TAG = "TextToSpeechHelper";
+    private TextToSpeech tts;
     private boolean isInitialized = false;
 
     public TextToSpeechHelper(Context context) {
-        tts = new TextToSpeech(context, new OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if (status == TextToSpeech.SUCCESS) {
-                    // Set the language for the text to speech engine.
-                    int langResult = tts.setLanguage(Locale.getDefault());
-                    if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        // Handle language initialization failure
-                        isInitialized = false;
-                    } else {
-                        isInitialized = true;
-                    }
-                } else {
-                    // Handle TextToSpeech initialization failure
+        if (context == null) return;
+        tts = new TextToSpeech(context.getApplicationContext(), status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                int langResult = tts.setLanguage(Locale.getDefault());
+                if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Log.w(TAG, "Language is not supported by TTS engine.");
                     isInitialized = false;
+                } else {
+                    isInitialized = true;
                 }
+            } else {
+                Log.w(TAG, "TTS Initialization failed.");
+                isInitialized = false;
             }
         });
     }
 
     public void speak(String text) {
-        if (isInitialized) {
-            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
-        } else {
-            // Handle TTS not initialized
+        if (text == null || text.trim().isEmpty()) return;
+        if (isInitialized && tts != null) {
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "EasyNoteTTS");
         }
     }
 
+    public boolean isSpeaking() {
+        return isInitialized && tts != null && tts.isSpeaking();
+    }
+
     public void stop() {
-        if (isInitialized) {
+        if (isInitialized && tts != null) {
             tts.stop();
         }
     }
 
     public void release() {
-        if (isInitialized) {
+        if (tts != null) {
+            tts.stop();
             tts.shutdown();
+            tts = null;
+            isInitialized = false;
         }
     }
 }

@@ -1,210 +1,204 @@
 package com.mobileapp.easynoteaudio;
 
-import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.Intent;
 import android.os.Bundle;
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.Navigation;
-
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Toast;
-import com.google.gson.Gson;
-import java.util.ArrayList;
-import java.util.Arrays;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
+
+import com.google.android.material.snackbar.Snackbar;
+import com.mobileapp.easynoteaudio.Adapter.NoteAdapter;
+import com.mobileapp.easynoteaudio.data.NoteEntity;
+import com.mobileapp.easynoteaudio.databinding.FragmentNoteManagerBinding;
+import com.mobileapp.easynoteaudio.viewmodel.NoteViewModel;
+
 import java.util.List;
 
-import com.mobileapp.easynoteaudio.databinding.FragmentNoteManagerBinding;
-import com.mobileapp.easynoteaudio.databinding.GridNotesBinding;
-
 public class NoteManager extends Fragment {
+
     private FragmentNoteManagerBinding binding;
-    private List<noteViewModel> noteList;
-    private ArrayAdapter<noteViewModel> adapter;
+    private NoteViewModel noteViewModel;
+    private NoteAdapter adapter;
     private TextToSpeechHelper tts;
+
     public NoteManager() {
+        // Required empty public constructor
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        binding = binding.inflate(inflater, container, false);
-        tts= new TextToSpeechHelper(getContext());
-        View view = binding.getRoot();
-        noteList = loadNotes();
-        adapter = new NoteAdapter(requireContext(), R.layout.grid_notes, noteList);
-        binding.gridNotes.setAdapter(adapter);
+        binding = FragmentNoteManagerBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
 
-        // Set up item click listeners
-        binding.gridNotes.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        tts = new TextToSpeechHelper(requireContext());
+        noteViewModel = new ViewModelProvider(requireActivity()).get(NoteViewModel.class);
+
+        setupRecyclerView();
+        setupSearch();
+        setupFabButtons();
+        observeNotes();
+    }
+
+    private void setupRecyclerView() {
+        adapter = new NoteAdapter(this::openNote, this::showNoteOptionsDialog);
+        StaggeredGridLayoutManager layoutManager =
+                new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
+        layoutManager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
+        binding.notesRecyclerView.setLayoutManager(layoutManager);
+        binding.notesRecyclerView.setAdapter(adapter);
+    }
+
+    private void setupSearch() {
+        binding.searchEditText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                noteViewModel selectedNote = noteList.get(position);
-                openNote(selectedNote.getTitle(),selectedNote.getContent(),position);
-                    }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
-            });
-
-        // Set up delete
-        binding.gridNotes.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                // long click delete the selected note
-                deleteNote(position);
-                return true;
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String query = s == null ? "" : s.toString().trim();
+                binding.clearSearchButton.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+                noteViewModel.setSearchQuery(query);
             }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
         });
 
-        binding.addNote.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openNote("","",-1);
+        binding.clearSearchButton.setOnClickListener(v -> {
+            binding.searchEditText.setText("");
+            binding.clearSearchButton.setVisibility(View.GONE);
+        });
+    }
 
+    private void setupFabButtons() {
+        // Add note FAB
+        binding.addNote.setOnClickListener(v -> openNote(null));
+
+        // Speak all notes FAB
+        binding.speakNotes.setOnClickListener(v -> {
+            if (tts != null && tts.isSpeaking()) {
+                tts.stop();
+            } else if (tts != null) {
+                noteViewModel.getAllNotesSync(this::speakAllNotes);
             }
         });
-        if (!NoteManagerArgs.fromBundle(getArguments()).getContent().isEmpty()){
-
-            saveNote(NoteManagerArgs.fromBundle(getArguments()).getTitle(),
-                    NoteManagerArgs.fromBundle(getArguments()).getContent(),
-                    NoteManagerArgs.fromBundle(getArguments()).getPos());
-
-        }
-        binding.speakNotes.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                tts.speak(getAllContent());
-            }
-        });
-
-
-
-        return view;
     }
 
-    private void saveNote(String title, String content, int pos) {
-        noteViewModel newNote = new noteViewModel(title, content);
-        boolean isDuplicate= checkForDuplicate(content);
-        // Check if the note already exists in the list
-        if (isDuplicate) {
-            Toast.makeText(this.getContext(), "NO CHANGES OR SIMILAR NOTE EXIST", Toast.LENGTH_SHORT).show();
-
-        }else{
-            if (pos > -1 && pos < noteList.size()) {
-                noteList.set(pos, newNote);
-            } else if (pos == -1) {
-                noteList.add(newNote);
-            }
-
-            saveNotes(noteList);
-        }
-
-
-    }
-    private boolean checkForDuplicate(String toFind) {
-        for (noteViewModel note : noteList) {
-            if (note.getContent().equals(toFind)) {
-                return true; // Duplicate title found
-            }
-        }
-        return false; // No duplicate title found
-    }
-
-
-    private void saveNotes(List<noteViewModel> notes) {
-        Gson gson = new Gson();
-        String json = gson.toJson(notes);
-        SharedPreferences.Editor editor = requireActivity().getPreferences(Context.MODE_PRIVATE).edit();
-        editor.putString("notes", json);
-        editor.apply();
-    }
-
-    private List<noteViewModel> loadNotes() {
-        // Load the notes from SharedPreferences
-        SharedPreferences prefs = requireActivity().getPreferences(Context.MODE_PRIVATE);
-        String json = prefs.getString("notes", null);
-
-        if (json != null) {
-            Gson gson = new Gson();
-            noteViewModel[] noteArray = gson.fromJson(json, noteViewModel[].class);
-
-            if (noteArray != null) {
-                return new ArrayList<>(Arrays.asList(noteArray));
-            }
-        }
-        return new ArrayList<>();
-    }
-
-    private void deleteNote(int position) {
-        if (position >= 0 && position < noteList.size()) {
-            noteList.remove(position);
-            saveNotes(noteList);
-            adapter.notifyDataSetChanged(); // Update the GridView
-        }
-    }
-    private void openNote(String title, String content, int position) {
-        NoteManagerDirections.ActionNoteManagerToNoteFragment action = NoteManagerDirections.actionNoteManagerToNoteFragment()
-                    .setTitle(title)
-                    .setContent(content)
-                    .setPos(position);
-        Navigation.findNavController(requireView()).navigate(action);
-        tts.stop();
-        tts.release();
-
-    }
- public  String getAllContent(){
-        StringBuilder content= new StringBuilder();
-        Integer i=1;
-         for(noteViewModel note : noteList ){
-            content.append(" Note number" + i.toString() + " is").append(note.getContent());
-            i++;
-     }
-         return content.toString();
- }
-
-    // Custom ArrayAdapter to display both title and content in the GridView
-    private static class NoteAdapter extends ArrayAdapter<noteViewModel> {
-        private final int layoutResource;
-        private GridNotesBinding gridBinding;
-        public NoteAdapter(Context context, int resource, List<noteViewModel> notes) {
-            super(context, resource, notes);
-            this.layoutResource = resource;
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            if (convertView == null) {
-                LayoutInflater inflater = LayoutInflater.from(getContext());
-                gridBinding = GridNotesBinding.inflate(inflater, parent, false);
-                gridBinding.getRoot().setTag(gridBinding);
+    private void observeNotes() {
+        noteViewModel.getNotes().observe(getViewLifecycleOwner(), notes -> {
+            adapter.submitList(notes);
+            if (notes == null || notes.isEmpty()) {
+                binding.emptyStateLayout.setVisibility(View.VISIBLE);
+                binding.notesRecyclerView.setVisibility(View.GONE);
             } else {
-                gridBinding = (GridNotesBinding) convertView.getTag();
+                binding.emptyStateLayout.setVisibility(View.GONE);
+                binding.notesRecyclerView.setVisibility(View.VISIBLE);
             }
+        });
+    }
 
-            noteViewModel note = getItem(position);
-
-            if (note != null) {
-
-                gridBinding.textViewTitle.setText(note.getTitle());
-                gridBinding.textViewContent.setText(trimContent(note.getContent()));
-            }
-
-            return gridBinding.getRoot();
+    private void openNote(@Nullable NoteEntity note) {
+        if (tts != null) {
+            tts.stop();
         }
-        //make the content 1 line of min 15
-        private String trimContent(String input) {
-            int maxLength = 15;
-            int index = Math.min(maxLength, input.length());
-            int newlineIndex = input.indexOf('\n');
-            if (newlineIndex != -1 && newlineIndex < index) {
-                index = newlineIndex;
-            }
-            return input.substring(0, index);
+        int noteId = note != null ? note.getId() : -1;
+        NoteManagerDirections.ActionNoteManagerToNoteFragment action =
+                NoteManagerDirections.actionNoteManagerToNoteFragment().setNoteId(noteId);
+        Navigation.findNavController(requireView()).navigate(action);
+    }
+
+    private void showNoteOptionsDialog(NoteEntity note, View anchorView) {
+        String pinActionText = note.isPinned() ? getString(R.string.unpin_note) : getString(R.string.pin_note);
+        CharSequence[] options = new CharSequence[]{
+                pinActionText,
+                getString(R.string.share_note),
+                getString(R.string.delete_note)
+        };
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle(note.getTitle().isEmpty() ? getString(R.string.notes) : note.getTitle())
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0: // Toggle Pin
+                            noteViewModel.togglePin(note);
+                            break;
+                        case 1: // Share Note
+                            shareNote(note);
+                            break;
+                        case 2: // Delete Note
+                            confirmDeleteNote(note);
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    private void shareNote(NoteEntity note) {
+        String shareBody = (note.getTitle().isEmpty() ? "" : note.getTitle() + "\n\n") + note.getContent();
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, note.getTitle());
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.share_note_title)));
+    }
+
+    private void confirmDeleteNote(NoteEntity note) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle(R.string.delete_note)
+                .setMessage(R.string.delete_note_confirm)
+                .setPositiveButton(R.string.confirm, (dialog, which) -> {
+                    noteViewModel.deleteNote(note);
+                    Snackbar.make(binding.getRoot(), R.string.note_deleted, Snackbar.LENGTH_LONG)
+                            .setAction(R.string.undo, v -> noteViewModel.insertNote(note, null))
+                            .show();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void speakAllNotes(List<NoteEntity> notes) {
+        if (tts == null) return;
+        if (notes == null || notes.isEmpty()) {
+            tts.speak("You have no notes to read.");
+            return;
         }
 
+        StringBuilder sb = new StringBuilder();
+        int index = 1;
+        for (NoteEntity note : notes) {
+            sb.append("Note ").append(index).append(". ");
+            if (!note.getTitle().isEmpty()) {
+                sb.append(note.getTitle()).append(". ");
+            }
+            sb.append(note.getContent()).append(". ");
+            index++;
+        }
+        tts.speak(sb.toString());
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (tts != null) {
+            tts.release();
+            tts = null;
+        }
+        binding = null;
     }
 }
